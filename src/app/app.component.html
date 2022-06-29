@@ -1,5 +1,65 @@
-<google-map height="400px" width="750px" [center]="center" [zoom]="zoom">
-</google-map>
-
-<div>Latitude: {{ display?.lat }}</div>
-<div>Longitude: {{ display?.lng }}</div>
+<div class="googleMapSection">
+  <div class="googleMap">
+    <google-map
+      height="70vh"
+      width="100%"
+      [center]="center"
+      [zoom]="zoom"
+      [options]="options"
+      (mapClick)="click($event)"
+    >
+      <div *ngFor="let area of vertices">
+        <map-polygon
+          [options]="getOption(area.areaName)"
+          *ngIf="area.area"
+          [paths]="area.area"
+        >
+        </map-polygon>
+      </div>
+    </google-map>
+    <div class="editModeWarning">
+      <h3 *ngIf="mapEditMode">
+        Area {{ mapEditMode }} is in edit mode, select three point to create a
+        area
+      </h3>
+    </div>
+    <div class="bottomSection">
+      <div class="controlMap">
+        <button (click)="addNewArea()" [disabled]="vertices.length >= 3">
+          Add new area
+        </button>
+        <div>
+          <div *ngFor="let area of vertices" class="areaControl">
+            <div class="controlTitle">
+              <h3>Area - {{ area.areaName }}</h3>
+              <div class="controlBtn">
+                <button
+                  (click)="editMode(area.areaName)"
+                  *ngIf="mapEditMode !== area.areaName"
+                >
+                  Edit
+                </button>
+                <button
+                  (click)="done(area.areaName)"
+                  *ngIf="mapEditMode === area.areaName"
+                >
+                  Done
+                </button>
+                <button (click)="delete(area.areaName)">Delete</button>
+              </div>
+            </div>
+            <p *ngIf="mapEditMode === area.areaName">In edit mode</p>
+            <div class="areaColor">
+              <h4>Area color</h4>
+              <div [class]="area.areaName"></div>
+            </div>
+            <div>
+              <h4>Area of {{ area.areaName }}</h4>
+              <!-- <h4>{{ computeArea(area.area) }}</h4> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
