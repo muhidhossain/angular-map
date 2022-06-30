@@ -1,8 +1,20 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
+import { MapPolygon } from '@angular/google-maps';
 
 interface VerticesType {
   areaName: string;
   area: google.maps.LatLngLiteral[];
+}
+
+interface ComputeAreaOfPolygonType {
+  areaName: string;
+  area: google.maps.LatLngLiteral[];
+  computedArea: number;
+}
+
+interface AreasType {
+  areaName: string;
+  computedArea: number;
 }
 
 interface PolygonOptionType {
@@ -17,11 +29,19 @@ interface PolygonOptionType {
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  title = 'angular-map';
+  @ViewChild(MapPolygon)
+  polygon!: MapPolygon;
 
+  title = 'angular-map';
   center: google.maps.LatLngLiteral = { lat: 22.647652, lng: 90.367825 };
   zoom = 17;
+
   mapEditMode: string = '';
+  totalAreaOfPolygon: number = 0;
+
+  vertices: VerticesType[] = [];
+  computeAreaOfPolygon: ComputeAreaOfPolygonType[] = [];
+
   options: google.maps.MapOptions = {
     mapTypeId: 'hybrid',
     disableDoubleClickZoom: true,
@@ -53,24 +73,8 @@ export class AppComponent {
     },
   };
 
-  vertices: VerticesType[] = [];
-
-  click(event: google.maps.MapMouseEvent) {
-    console.log(event.latLng?.lat());
-    const lat = event.latLng?.lat() || 0;
-    const lng = event.latLng?.lng() || 0;
-    if (this.mapEditMode && this.vertices.length) {
-      const index = this.vertices?.findIndex(
-        (area) => area.areaName === this.mapEditMode
-      );
-
-      if (index > -1 && this.vertices[index].area.length < 3) {
-        this.vertices[index] = {
-          ...this.vertices[index],
-          area: [...this.vertices[index]?.area, { lat, lng }],
-        };
-      }
-    }
+  getOption(name: string) {
+    return this.polygonOptions[name as keyof typeof this.polygonOptions];
   }
 
   addNewArea() {
@@ -99,20 +103,82 @@ export class AppComponent {
         areaName: areaName,
         area: [],
       });
+      this.computeAreaOfPolygon.push({
+        areaName: areaName,
+        area: [],
+        computedArea: 0,
+      });
+    }
+  }
+
+  click(event: google.maps.MapMouseEvent) {
+    const lat = event.latLng?.lat() || 0;
+    const lng = event.latLng?.lng() || 0;
+    if (this.mapEditMode && this.vertices.length) {
+      const index = this.vertices?.findIndex(
+        (area) => area.areaName === this.mapEditMode
+      );
+
+      if (index > -1 && this.vertices[index].area.length < 3) {
+        this.vertices[index] = {
+          ...this.vertices[index],
+          area: [...this.vertices[index]?.area, { lat, lng }],
+        };
+        this.computeAreaOfPolygon[index] = {
+          ...this.computeAreaOfPolygon[index],
+          area: [...this.computeAreaOfPolygon[index]?.area, { lat, lng }],
+        };
+      }
     }
 
-    console.log(this.vertices);
+    this.computeArea();
   }
 
   editMode(name: string) {
     this.mapEditMode = name;
-    this.polygonOptions = {
-      ...this.polygonOptions,
-      [name]: {
-        ...this.polygonOptions[name as keyof typeof this.polygonOptions],
-        editable: true,
-      },
-    };
+    for (let [key, value] of Object.entries(this.polygonOptions)) {
+      if (key === name) {
+        this.polygonOptions = {
+          ...this.polygonOptions,
+          [name]: {
+            ...this.polygonOptions[name as keyof typeof this.polygonOptions],
+            editable: true,
+          },
+        };
+      } else {
+        this.polygonOptions = {
+          ...this.polygonOptions,
+          [key]: {
+            ...this.polygonOptions[key as keyof typeof this.polygonOptions],
+            editable: false,
+          },
+        };
+      }
+    }
+  }
+
+  mouseMove(event: google.maps.MapMouseEvent) {
+    const vertices = this.polygon.getPath();
+    if (this.mapEditMode && this.vertices.length) {
+      const index = this.vertices?.findIndex(
+        (area) => area.areaName === this.mapEditMode
+      );
+
+      for (let i = 0; i < vertices.getLength(); i++) {
+        if (index > -1) {
+          const xy = vertices.getAt(i);
+          this.computeAreaOfPolygon[index] = {
+            ...this.computeAreaOfPolygon[index],
+            area: [
+              ...this.computeAreaOfPolygon[index]?.area,
+              { lat: xy.lat(), lng: xy.lng() },
+            ],
+          };
+        }
+      }
+    }
+
+    this.computeArea();
   }
 
   done(name: string) {
@@ -128,19 +194,37 @@ export class AppComponent {
 
   delete(name: string) {
     const index = this.vertices.findIndex((area) => area.areaName === name);
+    const computeIndex = this.computeAreaOfPolygon.findIndex(
+      (area) => area.areaName === name
+    );
     this.vertices.splice(index, 1);
+    this.computeAreaOfPolygon.splice(computeIndex, 1);
+
+    this.computeArea();
   }
 
-  getOption(name: string) {
-    return this.polygonOptions[name as keyof typeof this.polygonOptions];
-  }
+  async computeArea() {
+    for (let area of this.computeAreaOfPolygon) {
+      const computedArea = await google.maps.geometry.spherical.computeArea(
+        area.area
+      );
+      const index = this.computeAreaOfPolygon.findIndex(
+        (area) => area.areaName === this.mapEditMode
+      );
 
-  getPath(vertices: google.maps.LatLngLiteral[]) {
-    console.log(vertices);
-  }
+      if (index > -1 && this.mapEditMode) {
+        this.computeAreaOfPolygon[index] = {
+          ...this.computeAreaOfPolygon[index],
+          areaName: this.mapEditMode,
+          computedArea: computedArea,
+        };
+      }
+    }
 
-  // computeArea(vertices: google.maps.LatLngLiteral[]) {
-  //   const vertices =
-  //   return google.maps.geometry.spherical.computeArea(vertices);
-  // }
+    const totalArea = this.computeAreaOfPolygon.reduce(
+      (acc, curr) => acc + curr.computedArea,
+      0
+    );
+    this.totalAreaOfPolygon = totalArea;
+  }
 }

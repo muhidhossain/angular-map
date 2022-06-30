@@ -13,6 +13,7 @@
           [options]="getOption(area.areaName)"
           *ngIf="area.area"
           [paths]="area.area"
+          (polygonMouseup)="mouseMove($event)"
         >
         </map-polygon>
       </div>
@@ -22,6 +23,12 @@
         Area {{ mapEditMode }} is in edit mode, select three point to create a
         area
       </h3>
+      <h4 *ngIf="computeAreaOfPolygon[0]">
+        Total area: {{ totalAreaOfPolygon }} m<sup>2</sup>/{{
+          totalAreaOfPolygon * 0.0001
+        }}
+        hectares
+      </h4>
     </div>
     <div class="bottomSection">
       <div class="controlMap">
@@ -29,7 +36,10 @@
           Add new area
         </button>
         <div>
-          <div *ngFor="let area of vertices" class="areaControl">
+          <div
+            *ngFor="let area of computeAreaOfPolygon; let i = index"
+            class="areaControl"
+          >
             <div class="controlTitle">
               <h3>Area - {{ area.areaName }}</h3>
               <div class="controlBtn">
@@ -45,7 +55,13 @@
                 >
                   Done
                 </button>
-                <button (click)="delete(area.areaName)">Delete</button>
+                <button
+                  [class]="mapEditMode === area.areaName && 'disabled'"
+                  [disabled]="mapEditMode === area.areaName"
+                  (click)="delete(area.areaName)"
+                >
+                  Delete
+                </button>
               </div>
             </div>
             <p *ngIf="mapEditMode === area.areaName">In edit mode</p>
@@ -53,9 +69,13 @@
               <h4>Area color</h4>
               <div [class]="area.areaName"></div>
             </div>
-            <div>
-              <h4>Area of {{ area.areaName }}</h4>
-              <!-- <h4>{{ computeArea(area.area) }}</h4> -->
+            <div class="areaCalculation">
+              <h4>Area of {{ area.areaName }}:</h4>
+              <h4>{{ area.computedArea }} m<sup>2</sup></h4>
+              <h4>
+                {{ area.computedArea }}
+                hectares
+              </h4>
             </div>
           </div>
         </div>
@@ -63,3 +83,5 @@
     </div>
   </div>
 </div>
+
+<!-- (polygonMousemove)="dragend($event)" -->

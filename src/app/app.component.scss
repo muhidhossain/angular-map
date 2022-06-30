@@ -17,6 +17,11 @@
       color: red;
       text-align: center;
     }
+
+    h4 {
+      text-align: center;
+      color: green;
+    }
   }
 
   .bottomSection {
@@ -73,6 +78,12 @@
                 color: red;
                 border: 2px solid red;
               }
+
+              button:disabled {
+                background-color: transparent;
+                color: gray;
+                border: 2px solid gray;
+              }
             }
           }
 
@@ -110,13 +121,11 @@
             }
           }
 
-          ul {
-            list-style: none;
+          .areaCalculation {
+            margin-top: 20px;
 
-            li {
-              font-size: 16px;
-              font-weight: 600;
-              margin-bottom: 5px;
+            h4 {
+              margin: 0;
             }
           }
         }
