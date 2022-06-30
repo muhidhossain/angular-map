@@ -53,6 +53,7 @@ export class AppComponent {
       strokeWeight: 2,
       fillColor: '#FF0000',
       fillOpacity: 0.35,
+      clickable: false,
       editable: false,
     },
     B: {
@@ -61,6 +62,7 @@ export class AppComponent {
       strokeWeight: 2,
       fillColor: '#1a73e8',
       fillOpacity: 0.35,
+      clickable: false,
       editable: false,
     },
     C: {
@@ -69,6 +71,7 @@ export class AppComponent {
       strokeWeight: 2,
       fillColor: 'green',
       fillOpacity: 0.35,
+      clickable: false,
       editable: false,
     },
   };
